@@ -78,33 +78,33 @@
       <h4 class="catalog-title">Овощи, фрукты, ягоды</h4>
     </a>
     <ul>
-      <li><a href="/store?category=fruits">Фрукты и ягоды</a></li>
-      <li><a href="/store?category=vegetables">Овощи</a></li>
-      <li><a href="/store?category=greens">Зелень</a></li>
+      <li><a href="{{ url_for('vegetables') }}#fruits">Фрукты и ягоды</a></li>
+      <li><a href="{{ url_for('vegetables') }}#vegetables">Овощи</a></li>
+      <li><a href="{{ url_for('vegetables') }}#greens">Зелень</a></li>
     </ul>
   </div>
 
   <div class="catalog-item">
-    <a href="/store?category=meat">
+    <a href="{{ url_for('meat') }}">
       <img src="{{ url_for('static', filename='images/филе_куринное.jpg') }}" alt="Мясо">
       <h4 class="catalog-title">Птица, мясо</h4>
     </a>
     <ul>
-      <li><a href="/store?category=chicken">Птица</a></li>
-      <li><a href="/store?category=beef">Говядина</a></li>
-      <li><a href="/store?category=pork">Свинина</a></li>
+      <li><a href="{{ url_for('meat') }}#chicken">Птица</a></li>
+      <li><a href="{{ url_for('meat') }}#beef">Говядина</a></li>
+      <li><a href="{{ url_for('meat') }}#pork">Свинина</a></li>
     </ul>
   </div>
 
   <div class="catalog-item">
-    <a href="/store?category=drinks">
+    <a href="{{ url_for('drinks') }}">
       <img src="{{ url_for('static', filename='images/сок_апельсин.jpg') }}" alt="Соки">
       <h4 class="catalog-title">Вода, соки</h4>
     </a>
   </div>
 
   <div class="catalog-item">
-    <a href="/store?category=nuts">
+    <a href="{{ url_for('nuts') }}">
       <img src="{{ url_for('static', filename='images/фундук_очищенный.jpg') }}" alt="Орехи">
       <h4 class="catalog-title">Орехи</h4>
     </a>
@@ -117,7 +117,7 @@
     <div class="cart-grid">
       {% for item in items %}
         <div class="cart-card" data-product-id="{{ item['product_id'] }}">
-          <img src="{{ url_for('static', filename='images/' ~ item['product_name'].replace(' ', '_') ~ '.jpg') }}"
+          <img src="{{ product.image_url }}"
      alt="{{ item['product_name'] }}">
           <div class="product-name">{{ item['product_name']|capitalize }}</div>
           <div class="quantity-controls">
