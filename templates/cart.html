@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Интернет-магазин Markom</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='images/markom.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='store.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='cart.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
+
+</head>
+
+<body>
+  <header class="site-header">
+
+  <div class="header-left">
+    <a href="{{ url_for('store') }}">
+      <img src="{{ url_for('static', filename='images/markom_logo.svg') }}" alt="Логотип" class="logo">
+    </a>
+
+    <a href="#" class="catalog-button" id="catalog-toggle">
+      <i class="fas fa-bars" id="catalog-icon"></i>
+      <span class="catalog-text">Каталог</span>
+    </a>
+
+    <div class="search">
+  <form method="GET" action="{{ url_for('search') }}" class="search-form">
+    <input type="text" name="q" placeholder="Поиск..." class="search-input">
+    <button type="submit" class="search-button" aria-label="Поиск">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+  </form>
+</div>
+
+
+
+
+  </div>
+
+  <div class="header-right">
+
+    <a href="{{ url_for('cart') }}" class="cart-icon" title="Корзина">
+      <div class="cart-icon-btn">
+        <i class="fas fa-shopping-cart"></i>
+      </div>
+    </a>
+
+     {% if session.get('user_id') %}
+    <form action="{{ url_for('logout') }}" method="post" class="logout-icon">
+      <button type="submit" class="logout-icon-btn" title="Выйти">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </form>
+  {% else %}
+    <a href="{{ url_for('login') }}" class="login-icon" title="Войти">
+  <div class="login-icon-btn">
+    <i class="fas fa-user"></i>
+  </div>
+  <div class="login-icon-text">
+    <span>Войти</span>
+  </div>
+</a>
+
+  {% endif %}
+
+  </div>
+
+  </header>
+
+<div class="catalog-modal" id="catalog-menu" style="display: none;">
+
+  <div class="catalog-item">
+    <a href="{{ url_for('vegetables') }}">
+      <img src="{{ url_for('static', filename='images/авокадо.jpg') }}" alt="Фрукты и овощи">
+      <h4 class="catalog-title">Овощи, фрукты, ягоды</h4>
+    </a>
+    <ul>
+      <li><a href="/store?category=fruits">Фрукты и ягоды</a></li>
+      <li><a href="/store?category=vegetables">Овощи</a></li>
+      <li><a href="/store?category=greens">Зелень</a></li>
+    </ul>
+  </div>
+
+  <div class="catalog-item">
+    <a href="/store?category=meat">
+      <img src="{{ url_for('static', filename='images/филе_куринное.jpg') }}" alt="Мясо">
+      <h4 class="catalog-title">Птица, мясо</h4>
+    </a>
+    <ul>
+      <li><a href="/store?category=chicken">Птица</a></li>
+      <li><a href="/store?category=beef">Говядина</a></li>
+      <li><a href="/store?category=pork">Свинина</a></li>
+    </ul>
+  </div>
+
+  <div class="catalog-item">
+    <a href="/store?category=drinks">
+      <img src="{{ url_for('static', filename='images/сок_апельсин.jpg') }}" alt="Соки">
+      <h4 class="catalog-title">Вода, соки</h4>
+    </a>
+  </div>
+
+  <div class="catalog-item">
+    <a href="/store?category=nuts">
+      <img src="{{ url_for('static', filename='images/фундук_очищенный.jpg') }}" alt="Орехи">
+      <h4 class="catalog-title">Орехи</h4>
+    </a>
+  </div>
+
+</div>
+
+  <main class="cart-items">
+  {% if items %}
+    <div class="cart-grid">
+      {% for item in items %}
+        <div class="cart-card" data-product-id="{{ item['product_id'] }}">
+          <img src="{{ url_for('static', filename='images/' ~ item['product_name'].replace(' ', '_') ~ '.jpg') }}"
+     alt="{{ item['product_name'] }}">
+          <div class="product-name">{{ item['product_name']|capitalize }}</div>
+          <div class="quantity-controls">
+            <button class="decrease-btn">−</button>
+            <span class="quantity">{{ item['quantity'] }}</span>
+            <button class="increase-btn">+</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>Ваша корзина пуста.</p>
+  {% endif %}
+</main>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.cart-card').forEach(card => {
+    const productId = card.dataset.productId;
+    const quantitySpan = card.querySelector('.quantity');
+
+    const increaseBtn = card.querySelector('.increase-btn');
+    const decreaseBtn = card.querySelector('.decrease-btn');
+
+    if (!productId || !quantitySpan || !increaseBtn || !decreaseBtn) {
+      console.warn('Элемент управления не найден в карточке:', card);
+      return;
+    }
+
+    increaseBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch(`/cart/increase/${productId}`, { method: 'POST' });
+        if (response.ok) {
+          const data = await response.json();
+          quantitySpan.textContent = data.new_quantity;
+        }
+      } catch (err) {
+        console.error('Ошибка увеличения количества:', err);
+      }
+    });
+
+    decreaseBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch(`/cart/decrease/${productId}`, { method: 'POST' });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.new_quantity > 0) {
+            quantitySpan.textContent = data.new_quantity;
+          } else {
+            card.remove();
+          }
+        }
+      } catch (err) {
+        console.error('Ошибка уменьшения количества:', err);
+      }
+    });
+  });
+});
+</script>
+
+
+  
+<script src="{{ url_for('static', filename='js/store.js') }}"></script>
+
+</body>
+</html>
