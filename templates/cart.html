@@ -117,7 +117,7 @@
     <div class="cart-grid">
       {% for item in items %}
         <div class="cart-card" data-product-id="{{ item['product_id'] }}">
-          <img src="{{ product.image_url }}"
+          <img src="{{ url_for('static', filename='images/' ~ item['product_name'].replace(' ', '_') ~ '.jpg') }}"
      alt="{{ item['product_name'] }}">
           <div class="product-name">{{ item['product_name']|capitalize }}</div>
           <div class="quantity-controls">
