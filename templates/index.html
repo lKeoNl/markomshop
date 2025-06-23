@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Интернет-магазин Markom</title>
+
+    <link rel="icon" href="{{ url_for('static', filename='images/markom.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
+
+    <style>
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin: 5px 0 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <form class="login-box" method="POST" action="/login" id="loginForm">
+    <h2>Авторизация</h2>
+
+    <input type="text" name="email" id="email" placeholder="Электронная почта"
+           value="{{ values.get('email', '') }}">
+    {% if errors.get('email') %}
+        <div class="error-message">{{ errors['email'] }}</div>
+    {% endif %}
+
+    <input type="password" name="password" id="password" placeholder="Пароль">
+    {% if errors.get('password') %}
+        <div class="error-message">{{ errors['password'] }}</div>
+    {% endif %}
+
+    <button type="submit" class="login-btn">Войти</button>
+    <a href="/reg" class="register-btn">Регистрация</a>
+</form>
+    </div>
+
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+
+</body>
+
+{% if session.get('notification') %}
+<div class="notification">
+  {{ session.pop('notification') }}
+</div>
+<script>
+  showNotification();
+</script>
+{% endif %}
+
+
+</html>
