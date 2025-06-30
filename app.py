@@ -157,40 +157,42 @@ def reg():
     return render_template('reg.html', errors=errors)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
+    data = request.get_json()
+
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+
     errors = {}
-    values = {}
 
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '').strip()
+    # Валидация
+    if not email:
+        errors['email'] = 'Заполните обязательное поле'
+    if not password:
+        errors['password'] = 'Заполните обязательное поле'
 
-        values['email'] = email
+    if errors:
+        return jsonify({'success': False, 'errors': errors}), 400
 
+    # Проверка пользователя
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+    user = cursor.fetchone()
+    conn.close()
 
-        if not email:
-            errors['email'] = 'Заполните обязательное поле'
-        if not password:
-            errors['password'] = 'Заполните обязательное поле'
-
-        if not errors:
-            conn = sqlite3.connect('users.db')
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-            conn.close()
-
-            if user and check_password_hash(user[1], password):
-                session['user_id'] = user[0]
-                return redirect(url_for('store'))
-            else:
-                errors['password'] = 'Неверный email или пароль'
-
-        return render_template('index.html', errors=errors, values=values)
-
-    message = session.pop('message', None)
-    return render_template('index.html', errors={}, values={}, message=message)
+    if user and check_password_hash(user[1], password):
+        session['user_id'] = user[0]
+        return jsonify({
+            'success': True,
+            'redirect': url_for('store')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'errors': {'password': 'Неверный email или пароль'}
+        }), 401
 
 
 

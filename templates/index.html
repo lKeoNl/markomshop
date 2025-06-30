@@ -8,34 +8,70 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
 
-    <style>
-        .error-message {
-            color: red;
-            font-size: 14px;
-            margin: 5px 0 10px 0;
-        }
-    </style>
 </head>
-<body>
-    <div class="login-container">
-        <form class="login-box" method="POST" action="/login" id="loginForm">
-    <h2>Авторизация</h2>
+<div class="login-container">
+    <form id="login-form" class="login-box">
+        <h2>Авторизация</h2>
 
-    <input type="text" name="email" id="email" placeholder="Электронная почта"
-           value="{{ values.get('email', '') }}">
-    {% if errors.get('email') %}
-        <div class="error-message">{{ errors['email'] }}</div>
-    {% endif %}
+        <input type="text" name="email" placeholder="Электронная почта">
+        <div class="error" id="email-error"></div>
 
-    <input type="password" name="password" id="password" placeholder="Пароль">
-    {% if errors.get('password') %}
-        <div class="error-message">{{ errors['password'] }}</div>
-    {% endif %}
+        <input type="password" name="password" placeholder="Пароль">
+        <div class="error" id="password-error"></div>
 
-    <button type="submit" class="login-btn">Войти</button>
-    <a href="/reg" class="register-btn">Регистрация</a>
-</form>
-    </div>
+        <button type="submit" class="login-btn">Войти</button>
+        <a href="/reg" class="register-btn">Регистрация</a>
+
+        <div id="login-notification"></div>
+    </form>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Очищаем ошибки
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+    const notification = document.getElementById('login-notification');
+    notification.textContent = '';
+
+    // Собираем данные
+    const formData = {
+        email: e.target.email.value.trim(),
+        password: e.target.password.value.trim()
+    };
+
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Показываем ошибки
+            for (const [field, error] of Object.entries(data.errors)) {
+                const errorElement = document.getElementById(`${field}-error`);
+                if (errorElement) errorElement.textContent = error;
+            }
+            return;
+        }
+
+        // Успешная авторизация
+        if (data.redirect) {
+            window.location.href = data.redirect;
+        }
+
+    } catch (error) {
+        notification.textContent = 'Ошибка соединения с сервером';
+        notification.style.color = 'red';
+    }
+});
+</script>
 
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 
