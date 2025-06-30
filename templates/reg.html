@@ -36,12 +36,10 @@
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Очистка предыдущих ошибок
             document.querySelectorAll('.error').forEach(el => el.textContent = '');
             const notification = document.getElementById('notification');
             notification.textContent = '';
 
-            // Сбор данных формы
             const formData = {
                 name: e.target.name.value,
                 email: e.target.email.value,
@@ -62,7 +60,6 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Показ ошибок
                     for (const [field, error] of Object.entries(data.errors)) {
                         const errorElement = document.getElementById(`${field}-error`);
                         if (errorElement) errorElement.textContent = error;
@@ -71,11 +68,10 @@
                 }
 
 
-                // Перенаправление через 2 секунды
                 if (data.redirect) {
                     setTimeout(() => {
                         window.location.href = data.redirect;
-                    }, 2000);
+                    }, 100);
                 }
 
             } catch (error) {

@@ -73,7 +73,6 @@ app.secret_key = 'your_secret_key_here'  # Обязательно добавьт
 @app.route('/reg', methods=['GET', 'POST'])
 def reg():
     if request.method == 'POST':
-        # Определяем тип данных (AJAX/обычная форма)
         data = request.get_json() if request.is_json else request.form
 
         name = data.get('name', '').strip()
@@ -84,37 +83,31 @@ def reg():
 
         errors = {}
 
-        # Валидация имени
         if not name:
             errors['name'] = 'Заполните обязательное поле'
         elif len(name) > 20 or not re.match(r'^[А-Яа-яЁё\s]+$', name):
             errors['name'] = 'Некорректное имя'
 
-        # Валидация email
         if not email:
             errors['email'] = 'Заполните обязательное поле'
         elif not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
             errors['email'] = 'Некорректный email'
 
-        # Валидация логина
         if not login:
             errors['login'] = 'Заполните обязательное поле'
         elif len(login) > 20 or not re.match(r'^[А-Яа-яЁё0-9]+$', login):
             errors['login'] = 'Некорректный логин'
 
-        # Валидация пароля
         if not password:
             errors['password'] = 'Заполните обязательное поле'
         elif len(password) < 6 or not re.search(r'[А-ЯA-Z]', password):
             errors['password'] = 'Пароль должен содержать хотя бы 6 символов и одну заглавную букву'
 
-        # Подтверждение пароля
         if not confirm_password:
             errors['confirm_password'] = 'Заполните обязательное поле'
         elif confirm_password != password:
             errors['confirm_password'] = 'Пароли не совпадают'
 
-        # Проверка уникальности (замените get_db() на свою функцию)
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM users WHERE email = ?", (email,))
@@ -133,7 +126,6 @@ def reg():
                 session['errors'] = errors
                 return redirect(url_for('reg'))
 
-        # Регистрация пользователя
         hashed_password = generate_password_hash(password)
         cursor.execute(
             "INSERT INTO users (name, email, login, password) VALUES (?, ?, ?, ?)",
@@ -152,47 +144,56 @@ def reg():
             session['notification'] = 'Вы успешно зарегистрировались!'
             return redirect(url_for('login'))
 
-    # GET-запрос (показ формы)
     errors = session.pop('errors', {})
     return render_template('reg.html', errors=errors)
 
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])  # Оба метода для совместимости
 def login():
-    data = request.get_json()
+    if request.method == 'POST':
+        # Определяем тип запроса (AJAX/обычная форма)
+        if request.is_json:
+            data = request.get_json()  # Для AJAX
+        else:
+            data = request.form  # Для стандартной формы
 
-    email = data.get('email', '').strip()
-    password = data.get('password', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '').strip()
 
-    errors = {}
+        errors = {}
 
-    # Валидация
-    if not email:
-        errors['email'] = 'Заполните обязательное поле'
-    if not password:
-        errors['password'] = 'Заполните обязательное поле'
+        if not email:
+            errors['email'] = 'Заполните обязательное поле'
+        if not password:
+            errors['password'] = 'Заполните обязательное поле'
 
-    if errors:
-        return jsonify({'success': False, 'errors': errors}), 400
+        if errors:
+            if request.is_json:
+                return jsonify({'success': False, 'errors': errors}), 400
+            else:
+                return render_template('index.html', errors=errors, values={'email': email})
 
-    # Проверка пользователя
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
-    user = cursor.fetchone()
-    conn.close()
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
 
-    if user and check_password_hash(user[1], password):
-        session['user_id'] = user[0]
-        return jsonify({
-            'success': True,
-            'redirect': url_for('store')
-        })
-    else:
-        return jsonify({
-            'success': False,
-            'errors': {'password': 'Неверный email или пароль'}
-        }), 401
+        if user and check_password_hash(user[1], password):
+            session['user_id'] = user[0]
+            if request.is_json:
+                return jsonify({'success': True, 'redirect': url_for('store')})
+            else:
+                return redirect(url_for('store'))
+        else:
+            errors['password'] = 'Неверный email или пароль'
+            if request.is_json:
+                return jsonify({'success': False, 'errors': errors}), 401
+            else:
+                return render_template('index.html', errors=errors, values={'email': email})
+
+    # GET-запрос (показ формы)
+    return render_template('index.html', errors={}, values={})
 
 
 
