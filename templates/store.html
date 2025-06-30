@@ -483,7 +483,7 @@
         <div class="feedback-checkbox">
             <input type="checkbox" name="agreement" id="agreement">
             <label for="agreement">
-                Настоящим подтверждаю, что я ознакомлен и согласен с условиями...
+                Настоящим подтверждаю, что я ознакомлен и согласен с условиями оферты и политики конфиденциальности*
             </label>
             <div class="error" id="agreement-error"></div>
         </div>
@@ -530,7 +530,7 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
 
         // Успешная отправка
         e.target.reset(); // Очистка формы
-        alert('Форма успешно отправлена!'); // Простое уведомление
+        showNotification(); // Простое уведомление
 
     } catch (error) {
         console.error('Ошибка:', error);
