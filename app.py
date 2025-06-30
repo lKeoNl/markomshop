@@ -284,7 +284,8 @@ def feedback():
     conn.commit()
     conn.close()
 
-    return jsonify({'success': True})
+    return jsonify({'success': True,
+                   'message': 'Спасибо за отзыв!'})
 
 
 
