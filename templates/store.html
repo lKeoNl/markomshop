@@ -520,7 +520,6 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
         const data = await response.json();
 
         if (!response.ok) {
-            // Показ ошибок
             for (const [field, error] of Object.entries(data.errors)) {
                 const errorElement = document.getElementById(`${field}-error`);
                 if (errorElement) errorElement.textContent = error;
@@ -528,9 +527,10 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
             return;
         }
 
-        // Успешная отправка
-        e.target.reset(); // Очистка формы
-        showNotification(); // Простое уведомление
+        if (data.success) {
+            showNotification(data.message); // Показываем уведомление
+            e.target.reset(); // Очищаем форму
+        }
 
     } catch (error) {
         console.error('Ошибка:', error);
@@ -574,6 +574,7 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
 <script src="{{ url_for('static', filename='js/store.js') }}"></script>
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 
+<div id="global-notification" class="notification" style="display: none;"></div>
 
 </body>
 
@@ -581,9 +582,7 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
 <div class="notification">
   {{ session.pop('notification') }}
 </div>
-<script>
-  showNotification();
-</script>
+<script>showNotification();</script>
 {% endif %}
 
 

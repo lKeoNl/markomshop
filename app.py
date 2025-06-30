@@ -61,15 +61,6 @@ def update_quantity(product_id, delta, user_id):
 def index():
     return redirect(url_for('login'))
 
-
-from flask import Flask, request, jsonify, redirect, url_for, session
-from werkzeug.security import generate_password_hash
-import re
-
-app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Обязательно добавьте свой ключ!
-
-
 @app.route('/reg', methods=['GET', 'POST'])
 def reg():
     if request.method == 'POST':
@@ -148,14 +139,13 @@ def reg():
     return render_template('reg.html', errors=errors)
 
 
-@app.route('/login', methods=['GET', 'POST'])  # Оба метода для совместимости
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Определяем тип запроса (AJAX/обычная форма)
         if request.is_json:
-            data = request.get_json()  # Для AJAX
+            data = request.get_json()
         else:
-            data = request.form  # Для стандартной формы
+            data = request.form
 
         email = data.get('email', '').strip()
         password = data.get('password', '').strip()
@@ -192,7 +182,6 @@ def login():
             else:
                 return render_template('index.html', errors=errors, values={'email': email})
 
-    # GET-запрос (показ формы)
     return render_template('index.html', errors={}, values={})
 
 
@@ -205,7 +194,6 @@ def logout():
 
 @app.route('/store', methods=['GET'])
 def store():
-    # Получение товаров (оставляем как было)
     conn = get_db()
     cursor = conn.cursor()
 
@@ -262,7 +250,6 @@ def feedback():
 
     errors = {}
 
-    # Валидация (как у вас было)
     if not name:
         errors['name'] = 'Укажите имя'
     elif len(name) > 20 or not re.match(r'^[a-zA-Z\s]+$', name):
@@ -288,7 +275,6 @@ def feedback():
     if errors:
         return jsonify({'success': False, 'errors': errors}), 400
 
-    # Сохранение в БД
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(

@@ -1,12 +1,22 @@
-function showNotification() {
-  const notification = document.querySelector('.notification');
+function showNotification(message = null) {
+  const notification = document.querySelector('.notification') ||
+                      document.getElementById('global-notification');
+
   if (notification) {
+    if (message) {
+      notification.textContent = message;
+      notification.style.display = 'block';
+    }
+
     setTimeout(() => {
       notification.classList.add('show');
     }, 100);
 
     setTimeout(() => {
       notification.classList.remove('show');
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 400);
     }, 4000);
   }
 }
