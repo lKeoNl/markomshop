@@ -8,38 +8,86 @@
 </head>
 <body>
   <div class="register-container">
-    <form class="register-box" method="POST" action="/reg">
-      <h2>Регистрация</h2>
+    <form id="register-form" class="register-box">
+        <h2>Регистрация</h2>
 
-      <input type="text" name="name" placeholder="Имя" value="{{ values.get('name', '') }}" >
-      {% if errors.get('name') %}
-        <div class="error">{{ errors['name'] }}</div>
-      {% endif %}
+        <input type="text" name="name" placeholder="Имя">
+        <div class="error" id="name-error"></div>
 
-      <input type="text" name="email" placeholder="Электронная почта" value="{{ values.get('email', '') }}" >
-      {% if errors.get('email') %}
-        <div class="error">{{ errors['email'] }}</div>
-      {% endif %}
+        <input type="text" name="email" placeholder="Электронная почта">
+        <div class="error" id="email-error"></div>
 
-      <input type="text" name="login" placeholder="Логин" value="{{ values.get('login', '') }}" >
-      {% if errors.get('login') %}
-        <div class="error">{{ errors['login'] }}</div>
-      {% endif %}
+        <input type="text" name="login" placeholder="Логин">
+        <div class="error" id="login-error"></div>
 
-      <input type="password" name="password" placeholder="Пароль" >
-      {% if errors.get('password') %}
-        <div class="error">{{ errors['password'] }}</div>
-      {% endif %}
+        <input type="password" name="password" placeholder="Пароль">
+        <div class="error" id="password-error"></div>
 
-      <input type="password" name="confirm_password" placeholder="Подтвердите пароль" >
-      {% if errors.get('confirm_password') %}
-        <div class="error">{{ errors['confirm_password'] }}</div>
-      {% endif %}
+        <input type="password" name="confirm_password" placeholder="Подтвердите пароль">
+        <div class="error" id="confirm_password-error"></div>
 
+        <button type="submit" class="register-btn">Зарегистрироваться</button>
 
-      <button type="submit" class="register-btn">Зарегистрироваться</button>
+        <div class="notification" id="register-notification"></div>
     </form>
-  </div>
+</div>
+
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Очищаем ошибки
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+    const notification = document.getElementById('register-notification');
+    notification.textContent = '';
+
+    // Собираем данные формы
+    const formData = {
+        name: e.target.name.value,
+        email: e.target.email.value,
+        login: e.target.login.value,
+        password: e.target.password.value,
+        confirm_password: e.target.confirm_password.value
+    };
+
+    try {
+        const response = await fetch('/reg', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Показываем ошибки
+            for (const [field, error] of Object.entries(data.errors)) {
+                const errorElement = document.getElementById(`${field}-error`);
+                if (errorElement) errorElement.textContent = error;
+            }
+            return;
+        }
+
+        // Успешная регистрация
+        notification.textContent = data.message;
+        notification.style.color = 'green';
+
+        // Перенаправление через 2 секунды
+        if (data.redirect) {
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 2000);
+        }
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+        notification.textContent = 'Произошла ошибка при отправке формы';
+        notification.style.color = 'red';
+    }
+});
+</script>
 
 
 

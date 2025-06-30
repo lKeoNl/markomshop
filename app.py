@@ -62,70 +62,72 @@ def index():
     return redirect(url_for('login'))
 
 
-@app.route('/reg', methods=['GET', 'POST'])
+@app.route('/reg', methods=['POST'])
 def reg():
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        login = request.form.get('login', '').strip()
-        password = request.form.get('password', '').strip()
-        confirm_password = request.form.get('confirm_password', '').strip()
+    data = request.get_json()  # Получаем данные как JSON
 
-        errors = {}
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    login = data.get('login', '').strip()
+    password = data.get('password', '').strip()
+    confirm_password = data.get('confirm_password', '').strip()
 
-        if not name:
-            errors['name'] = 'Заполните обязательное поле'
-        elif len(name) > 20 or not re.match(r'^[А-Яа-яЁё\s]+$', name):
-            errors['name'] = 'Некорректное имя'
+    errors = {}
 
-        if not email:
-            errors['email'] = 'Заполните обязательное поле'
-        elif not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
-            errors['email'] = 'Некорректный email'
+    # Ваша валидация
+    if not name:
+        errors['name'] = 'Заполните обязательное поле'
+    elif len(name) > 20 or not re.match(r'^[А-Яа-яЁё\s]+$', name):
+        errors['name'] = 'Некорректное имя'
 
-        if not login:
-            errors['login'] = 'Заполните обязательное поле'
-        elif len(login) > 20 or not re.match(r'^[А-Яа-яЁё0-9]+$', login):
-            errors['login'] = 'Некорректный логин'
+    if not email:
+        errors['email'] = 'Заполните обязательное поле'
+    elif not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        errors['email'] = 'Некорректный email'
 
-        if not password:
-            errors['password'] = 'Заполните обязательное поле'
-        elif len(password) < 6 or not re.search(r'[А-ЯA-Z]', password):
-            errors['password'] = 'Пароль должен содержать хотя бы 6 символов и одну заглавную букву'
+    if not login:
+        errors['login'] = 'Заполните обязательное поле'
+    elif len(login) > 20 or not re.match(r'^[А-Яа-яЁё0-9]+$', login):
+        errors['login'] = 'Некорректный логин'
 
-        if not confirm_password:
-            errors['confirm_password'] = 'Заполните обязательное поле'
-        elif confirm_password != password:
-            errors['confirm_password'] = 'Пароли не совпадают'
+    if not password:
+        errors['password'] = 'Заполните обязательное поле'
+    elif len(password) < 6 or not re.search(r'[А-ЯA-Z]', password):
+        errors['password'] = 'Пароль должен содержать хотя бы 6 символов и одну заглавную букву'
 
-        conn = get_db()
-        cursor = conn.cursor()
+    if not confirm_password:
+        errors['confirm_password'] = 'Заполните обязательное поле'
+    elif confirm_password != password:
+        errors['confirm_password'] = 'Пароли не совпадают'
 
-        cursor.execute("SELECT 1 FROM users WHERE email = ?", (email,))
-        if cursor.fetchone():
-            errors['email'] = 'Этот email уже используется'
+    # Проверка уникальности
+    conn = get_db()
+    cursor = conn.cursor()
 
-        cursor.execute("SELECT 1 FROM users WHERE login = ?", (login,))
-        if cursor.fetchone():
-            errors['login'] = 'Этот логин уже используется'
+    cursor.execute("SELECT 1 FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        errors['email'] = 'Этот email уже используется'
 
-        if errors:
-            conn.close()
-            session['errors'] = errors
-            session['values'] = request.form
-            return redirect(url_for('reg'))
+    cursor.execute("SELECT 1 FROM users WHERE login = ?", (login,))
+    if cursor.fetchone():
+        errors['login'] = 'Этот логин уже используется'
 
-        hashed_password = generate_password_hash(password)
-        cursor.execute("INSERT INTO users (name, email, login, password) VALUES (?, ?, ?, ?)",
-                       (name, email, login, hashed_password))
-        conn.commit()
+    if errors:
         conn.close()
-        session['notification'] = 'Вы успешно зарегистрировались!'
-        return redirect(url_for('login'))
+        return jsonify({'success': False, 'errors': errors}), 400
 
-    errors = session.pop('errors', {})
-    values = session.pop('values', {})
-    return render_template('reg.html', errors=errors, values=values)
+    # Регистрация
+    hashed_password = generate_password_hash(password)
+    cursor.execute("INSERT INTO users (name, email, login, password) VALUES (?, ?, ?, ?)",
+                   (name, email, login, hashed_password))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'success': True,
+        'message': 'Вы успешно зарегистрировались!',
+        'redirect': url_for('login')
+    })
 
 
 
