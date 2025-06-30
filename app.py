@@ -203,87 +203,30 @@ def logout():
     return redirect(url_for('login'))
 
 
-
-@app.route('/store', methods=['GET', 'POST'])
+@app.route('/store', methods=['GET'])
 def store():
-    scroll_to_form = False
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        phone = request.form.get('phone', '').strip()
-        comment = request.form.get('comment', '').strip()
-        agreement = request.form.get('agreement')
-
-        values = {
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'comment': comment,
-            'agreement': agreement
-        }
-
-        errors = {}
-        if not name:
-            errors['name'] = 'Укажите имя'
-        elif len(name) > 20 or not re.match(r'^[a-zA-Z\s]+$', name):
-            errors['name'] = 'Допустимы только латинские буквы'
-
-        if not email:
-            errors['email'] = 'Укажите адрес электронной почты'
-        elif not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
-            errors['email'] = 'Некорректный формат почты'
-
-        if phone:
-            if not re.match(r'^\d+$', phone):
-                errors['phone'] = 'Допустимы только цифры'
-            elif len(phone) > 11:
-                errors['phone'] = 'Телефон не должен превышать 11 цифр'
-
-        if comment and len(comment) > 120:
-            errors['comment'] = 'Комментарий не должен превышать 120 символов'
-
-        if not agreement:
-            errors['agreement'] = 'Подтвердите согласие'
-
-
-        if errors:
-            session['errors'] = errors
-            session['values'] = values
-            session['scroll_to_form'] = True
-        else:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
-                           (name, email, phone, comment))
-            conn.commit()
-            conn.close()
-            session['scroll_to_form'] = True
-            session['notification'] = 'Спасибо за отзыв!'
-
-        return redirect(url_for('store'))
-
-    errors = session.pop('errors', {})
-    values = session.pop('values', {})
-    success = session.pop('success', False)
-    scroll_to_form = session.pop('scroll_to_form', {})
-    message = session.pop('message', None)
-
+    # Получение товаров (оставляем как было)
     conn = get_db()
     cursor = conn.cursor()
 
     new_products = []
     for category in ['vegetables', 'fruits']:
-        cursor.execute("""SELECT id, category, name, image_url FROM products 
-                              WHERE category = ? ORDER BY id DESC LIMIT 4""", (category,))
+        cursor.execute("""SELECT id, category, name, image_url
+                          FROM products
+                          WHERE category = ?
+                          ORDER BY id DESC LIMIT 4""", (category,))
         new_products.extend(cursor.fetchall())
     new_product_list = [
-        {'id': row[0], 'category': row[1], 'name': row[2], 'image_url': row[3]} for row in new_products
+        {'id': row[0], 'category': row[1], 'name': row[2], 'image_url': row[3]}
+        for row in new_products
     ]
 
     new_drinks = []
     for category in ['drinks']:
-        cursor.execute("""SELECT id, category, name, image_url FROM products 
-                              WHERE category = ? ORDER BY id DESC LIMIT 5""", (category,))
+        cursor.execute("""SELECT id, category, name, image_url
+                          FROM products
+                          WHERE category = ?
+                          ORDER BY id DESC LIMIT 5""", (category,))
         new_drinks.extend(cursor.fetchall())
     new_drinks_list = [
         {'id': row[0], 'category': row[1], 'name': row[2], 'image_url': row[3]} for row in new_drinks
@@ -291,8 +234,10 @@ def store():
 
     new_nuts = []
     for category in ['nuts']:
-        cursor.execute("""SELECT id, category, name, image_url FROM products 
-                              WHERE category = ? ORDER BY id DESC LIMIT 5""", (category,))
+        cursor.execute("""SELECT id, category, name, image_url
+                          FROM products
+                          WHERE category = ?
+                          ORDER BY id DESC LIMIT 5""", (category,))
         new_nuts.extend(cursor.fetchall())
     new_nuts_list = [
         {'id': row[0], 'category': row[1], 'name': row[2], 'image_url': row[3]} for row in new_nuts
@@ -302,12 +247,59 @@ def store():
     return render_template('store.html',
                            new_products=new_product_list,
                            new_drinks=new_drinks_list,
-                           new_nuts=new_nuts_list,
-                           errors=errors,
-                           values=values,
-                           scroll_to_form=scroll_to_form,
-                           message=message,
-                           success=success)
+                           new_nuts=new_nuts_list)
+
+
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    data = request.get_json()
+
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    comment = data.get('comment', '').strip()
+    agreement = data.get('agreement', False)
+
+    errors = {}
+
+    # Валидация (как у вас было)
+    if not name:
+        errors['name'] = 'Укажите имя'
+    elif len(name) > 20 or not re.match(r'^[a-zA-Z\s]+$', name):
+        errors['name'] = 'Допустимы только латинские буквы'
+
+    if not email:
+        errors['email'] = 'Укажите адрес электронной почты'
+    elif not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        errors['email'] = 'Некорректный формат почты'
+
+    if phone:
+        if not re.match(r'^\d+$', phone):
+            errors['phone'] = 'Допустимы только цифры'
+        elif len(phone) > 11:
+            errors['phone'] = 'Телефон не должен превышать 11 цифр'
+
+    if comment and len(comment) > 120:
+        errors['comment'] = 'Комментарий не должен превышать 120 символов'
+
+    if not agreement:
+        errors['agreement'] = 'Подтвердите согласие'
+
+    if errors:
+        return jsonify({'success': False, 'errors': errors}), 400
+
+    # Сохранение в БД
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+        (name, email, phone, comment)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
 
 
 @app.route('/vegetables', methods=['GET', 'POST'])

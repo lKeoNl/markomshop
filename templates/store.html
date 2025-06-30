@@ -467,34 +467,76 @@
 
   <section id="feedback" class="feedback-section">
     <h2 class="feedback-title">Обратная связь</h2>
-    <form id="feedback-form" class="feedback-form" method="POST" action="/store">
+    <form id="feedback-form" class="feedback-form">
+        <input type="text" name="name" placeholder="Имя*">
+        <div class="error" id="name-error"></div>
 
+        <input type="text" name="phone" placeholder="Телефон" class="feedback-phone">
+        <div class="error" id="phone-error"></div>
 
-  <input type="text" name="name" placeholder="Имя*" value="{{ values.get('name', '') }}">
-  {% if errors.get('name') %}<div class="error">{{ errors['name'] }}</div>{% endif %}
+        <input type="text" name="email" placeholder="Почта*">
+        <div class="error" id="email-error"></div>
 
-  <input type="number" name="phone" placeholder="Телефон" class="feedback-phone" value="{{ values.get('phone', '') }}">
-  {% if errors.get('phone') %}<div class="error">{{ errors['phone'] }}</div>{% endif %}
+        <textarea name="comment" placeholder="Комментарий"></textarea>
+        <div class="error" id="comment-error"></div>
 
-  <input type="text" name="email" placeholder="Почта*" value="{{ values.get('email', '') }}">
-  {% if errors.get('email') %}<div class="error">{{ errors['email'] }}</div>{% endif %}
+        <div class="feedback-checkbox">
+            <input type="checkbox" name="agreement" id="agreement">
+            <label for="agreement">
+                Настоящим подтверждаю, что я ознакомлен и согласен с условиями...
+            </label>
+            <div class="error" id="agreement-error"></div>
+        </div>
 
-  <textarea name="comment" placeholder="Комментарий">{{ values.get('comment', '') }}</textarea>
-  {% if errors.get('comment') %}<div class="error">{{ errors['comment'] }}</div>{% endif %}
-
-  <div class="feedback-checkbox">
-    <input type="checkbox" name="agreement" id="agreement" {% if values.get('agreement') %}checked{% endif %}>
-    <label for="agreement">
-        Настоящим подтверждаю, что я ознакомлен и согласен с условиями оферты и политики конфиденциальности*
-    </label>
-  </div>
-  {% if errors.get('agreement') %}<div class="error">{{ errors['agreement'] }}</div>{% endif %}
-
-  <button type="submit" class="submit-button">Отправить</button>
-</form>
-
-
+        <button type="submit" class="submit-button">Отправить</button>
+    </form>
 </section>
+
+<script>
+document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Очистка ошибок
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+
+    // Сбор данных
+    const formData = {
+        name: e.target.name.value.trim(),
+        email: e.target.email.value.trim(),
+        phone: e.target.phone.value.trim(),
+        comment: e.target.comment.value.trim(),
+        agreement: e.target.agreement.checked
+    };
+
+    try {
+        const response = await fetch('/feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Показ ошибок
+            for (const [field, error] of Object.entries(data.errors)) {
+                const errorElement = document.getElementById(`${field}-error`);
+                if (errorElement) errorElement.textContent = error;
+            }
+            return;
+        }
+
+        // Успешная отправка
+        e.target.reset(); // Очистка формы
+        alert('Форма успешно отправлена!'); // Простое уведомление
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+    }
+});
+</script>
 
 </footer>
 
