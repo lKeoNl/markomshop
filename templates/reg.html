@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns="http://www.w3.org/1999/html">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Интернет-магазин Markom</title>
+
   <link rel="icon" href="{{ url_for('static', filename='images/markom.ico') }}" type="image/x-icon">
   <link rel="stylesheet" href="{{ url_for('static', filename='reg.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
+
 </head>
 <body>
   <div class="register-container">
@@ -84,6 +87,7 @@
     </script>
 
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+
 <div id="global-notification" class="notification" style="display: none;"></div>
 
 </body>
