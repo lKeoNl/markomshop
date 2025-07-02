@@ -496,10 +496,8 @@
 document.getElementById('feedback-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Очистка ошибок
     document.querySelectorAll('.error').forEach(el => el.textContent = '');
 
-    // Сбор данных
     const formData = {
         name: e.target.name.value.trim(),
         email: e.target.email.value.trim(),
@@ -528,8 +526,8 @@ document.getElementById('feedback-form').addEventListener('submit', async (e) =>
         }
 
         if (data.success) {
-            showNotification(data.message); // Показываем уведомление
-            e.target.reset(); // Очищаем форму
+            showNotification(data.message);
+            e.target.reset();
         }
 
     } catch (error) {

@@ -10,7 +10,7 @@
 
 </head>
 <div class="login-container">
-    <form id="login-form" class="login-box">  <!-- Убраны method и action -->
+    <form id="login-form" class="login-box">
         <h2>Авторизация</h2>
 
         <input type="text" name="email" placeholder="Электронная почта">
@@ -28,14 +28,12 @@
 
 <script>
 document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();  // Важно: отменяем стандартную отправку
+    e.preventDefault();
 
-    // Очистка ошибок
     document.querySelectorAll('.error').forEach(el => el.textContent = '');
     const notification = document.getElementById('login-notification');
     notification.textContent = '';
 
-    // Данные формы
     const formData = {
         email: e.target.email.value.trim(),
         password: e.target.password.value.trim()
@@ -53,7 +51,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (!response.ok) {
-            // Показ ошибок
             for (const [field, error] of Object.entries(data.errors)) {
                 const errorElement = document.getElementById(`${field}-error`);
                 if (errorElement) errorElement.textContent = error;
@@ -61,7 +58,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             return;
         }
 
-        // Успешная авторизация
         if (data.redirect) {
             window.location.href = data.redirect;
         }

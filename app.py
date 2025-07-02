@@ -112,7 +112,9 @@ def reg():
         if errors:
             conn.close()
             if request.is_json:
-                return jsonify({'success': False, 'errors': errors}), 400
+                return jsonify({'success': False,
+                                'errors': errors
+                                }), 400
             else:
                 session['errors'] = errors
                 return redirect(url_for('reg'))
@@ -172,13 +174,16 @@ def login():
         if user and check_password_hash(user[1], password):
             session['user_id'] = user[0]
             if request.is_json:
-                return jsonify({'success': True, 'redirect': url_for('store')})
+                return jsonify({'success': True,
+                                'redirect': url_for('store')})
             else:
                 return redirect(url_for('store'))
         else:
             errors['password'] = 'Неверный email или пароль'
             if request.is_json:
-                return jsonify({'success': False, 'errors': errors}), 401
+                return jsonify({'success': False,
+                                'errors': errors
+                                }), 401
             else:
                 return render_template('index.html', errors=errors, values={'email': email})
 
@@ -273,7 +278,9 @@ def feedback():
         errors['agreement'] = 'Подтвердите согласие'
 
     if errors:
-        return jsonify({'success': False, 'errors': errors}), 400
+        return jsonify({'success': False,
+                        'errors': errors
+                        }), 400
 
     conn = get_db()
     cursor = conn.cursor()
