@@ -13,7 +13,7 @@ function showNotification(message = '') {
       setTimeout(() => {
         notification.style.display = 'none';
       }, 400);
-    }, 4000);
+    }, 2000);
   }
 }
 

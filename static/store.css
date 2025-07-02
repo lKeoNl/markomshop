@@ -566,7 +566,8 @@ body {
 }
 
 .feedback-checkbox {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 8px;
   font-size: 14px;
@@ -596,13 +597,28 @@ input.feedback-phone {
 
 
 .error {
-  color: red;
+  color: #ff0000;
+  font-family: Arial, sans-serif;
   font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-shadow: 0 0 1px rgba(255,255,255,0.3);
   margin-top: -15px;
   margin-bottom: 10px;
 }
-
-
+.error:not(:empty)::before {
+  content: "\f06a";
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  display: inline-block;
+  margin-right: 6px;
+}
+#agreement-error {
+  grid-column: 2;
+  margin-top: 5px;
+  margin-left: -25px;
+}
 
 .submit-button {
   background-color: #1f7d63;

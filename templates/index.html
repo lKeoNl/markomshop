@@ -5,6 +5,9 @@
     <title>Интернет-магазин Markom</title>
 
     <link rel="icon" href="{{ url_for('static', filename='images/markom.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='notifications.css') }}">
 
@@ -20,19 +23,25 @@
         <div class="error" id="password-error"></div>
 
         <button type="submit" class="login-btn">Войти</button>
-        <a href="/reg" class="register-btn">Регистрация</a>
+        <a href="/reg" class="register-btn">Зарегистрироваться</a>
 
         <div id="login-notification"></div>
     </form>
 </div>
 
 <script>
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    document.querySelectorAll('.error').forEach(el => el.textContent = '');
-    const notification = document.getElementById('login-notification');
-    notification.textContent = '';
+    // Сброс ошибок
+    document.querySelectorAll('.error').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('show');
+    });
+
+    document.querySelectorAll('input').forEach(input => {
+        input.classList.remove('error-border');
+    });
 
     const formData = {
         email: e.target.email.value.trim(),
@@ -53,7 +62,10 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (!response.ok) {
             for (const [field, error] of Object.entries(data.errors)) {
                 const errorElement = document.getElementById(`${field}-error`);
-                if (errorElement) errorElement.textContent = error;
+                if (errorElement) {
+                    errorElement.textContent = error;
+                    errorElement.classList.add('show');
+                }
             }
             return;
         }
@@ -61,9 +73,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (data.redirect) {
             window.location.href = data.redirect;
         }
+
     } catch (error) {
-        notification.textContent = 'Ошибка соединения';
-        notification.style.color = 'red';
+        notification.textContent = 'Ошибка соединения с сервером';
+        notification.style.color = '#d32f2f';
+        notification.style.backgroundColor = '#ffebee';
     }
 });
 </script>
@@ -71,15 +85,4 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 
 </body>
-
-{% if session.get('notification') %}
-<div class="notification">
-  {{ session.pop('notification') }}
-</div>
-<script>
-  showNotification();
-</script>
-{% endif %}
-
-
 </html>
