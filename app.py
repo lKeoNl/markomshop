@@ -1,23 +1,30 @@
-import sqlite3
+import os
+from dotenv import load_dotenv
 import re
 import psycopg2
-import os
-from urllib.parse import urlparse
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
+load_dotenv()
 app = Flask(__name__)
-app.secret_key = 'l@43ka@321skk#*(#$voda8123)((!#knds(@&#nkj12'
+app.secret_key = os.getenv("SECRET_KEY")
 
 
 def get_db():
-    db_url = 'postgresql://markomshop_zqfs_user:4nyEt0vHOQeH59CiShRJRAyKsWcw5C03@dpg-d1n7h2uuk2gs739m5ka0-a.frankfurt-postgres.render.com/markomshop_zqfs'
+    db_url = os.getenv("DATABASE_URL")
 
-    if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    if not db_url:
+        raise ValueError("DATABASE_URL not set in .env")
 
-    conn = psycopg2.connect(db_url)
-    return conn
+    try:
+        if "?sslmode=" not in db_url:
+            db_url += "?sslmode=require"
+
+        conn = psycopg2.connect(db_url)
+        return conn
+    except Exception as e:
+        print("Ошибка подключения к БД:", e)
+        return None
 
 
 def update_quantity(product_id, delta, user_id):
