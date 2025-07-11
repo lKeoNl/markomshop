@@ -1,16 +1,22 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import sqlite3
 import re
+import psycopg2
+import os
+from urllib.parse import urlparse
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = 'l@43ka@321skk#*(#$voda8123)((!#knds(@&#nkj12'
 
 
-
 def get_db():
-    conn = sqlite3.connect('users.db')
-    conn.row_factory = sqlite3.Row
+    db_url = 'postgresql://markomshop_zqfs_user:4nyEt0vHOQeH59CiShRJRAyKsWcw5C03@dpg-d1n7h2uuk2gs739m5ka0-a.frankfurt-postgres.render.com/markomshop_zqfs'
+
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+
+    conn = psycopg2.connect(db_url)
     return conn
 
 
@@ -18,7 +24,7 @@ def update_quantity(product_id, delta, user_id):
     db = get_db()
 
     cur = db.execute(
-        "SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?",
+        "SELECT quantity FROM cart WHERE user_id = %s AND product_id = %s",
         (user_id, product_id)
     )
     row = cur.fetchone()
@@ -27,12 +33,12 @@ def update_quantity(product_id, delta, user_id):
         new_quantity = row['quantity'] + delta
         if new_quantity > 0:
             db.execute(
-                "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?",
+                "UPDATE cart SET quantity = %s WHERE user_id = %s AND product_id = %s",
                 (new_quantity, user_id, product_id)
             )
         else:
             db.execute(
-                "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
+                "DELETE FROM cart WHERE user_id = %s AND product_id = %s",
                 (user_id, product_id)
             )
         db.commit()
@@ -41,14 +47,14 @@ def update_quantity(product_id, delta, user_id):
         if delta > 0:
 
             product_row = db.execute(
-                "SELECT name FROM products WHERE id = ?",
+                "SELECT name FROM products WHERE id = %s",
                 (product_id,)
             ).fetchone()
 
             product_name = product_row['name'] if product_row else 'Неизвестно'
 
             db.execute(
-                "INSERT INTO cart (user_id, product_id, product_name, quantity) VALUES (?, ?, ?, ?)",
+                "INSERT INTO cart (user_id, product_id, product_name, quantity) VALUES (%s, %s, %s, %s)",
                 (user_id, product_id, product_name, delta)
             )
             db.commit()
@@ -101,11 +107,11 @@ def reg():
 
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT 1 FROM users WHERE email = ?", (email,))
+        cursor.execute("SELECT 1 FROM users WHERE email = %s", (email,))
         if cursor.fetchone():
             errors['email'] = 'Этот email уже используется'
 
-        cursor.execute("SELECT 1 FROM users WHERE login = ?", (login,))
+        cursor.execute("SELECT 1 FROM users WHERE login = %s", (login,))
         if cursor.fetchone():
             errors['login'] = 'Этот логин уже используется'
 
@@ -121,7 +127,7 @@ def reg():
 
         hashed_password = generate_password_hash(password)
         cursor.execute(
-            "INSERT INTO users (name, email, login, password) VALUES (?, ?, ?, ?)",
+            "INSERT INTO users (name, email, login, password) VALUES (%s, %s, %s, %s)",
             (name, email, login, hashed_password)
         )
         conn.commit()
@@ -165,10 +171,11 @@ def login():
             else:
                 return render_template('index.html', errors=errors, values={'email': email})
 
-        conn = sqlite3.connect('users.db')
+        conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+        cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
+        cursor.close()
         conn.close()
 
         if user and check_password_hash(user[1], password):
@@ -206,7 +213,7 @@ def store():
     for category in ['vegetables', 'fruits']:
         cursor.execute("""SELECT id, category, name, image_url
                           FROM products
-                          WHERE category = ?
+                          WHERE category = %s
                           ORDER BY id DESC LIMIT 4""", (category,))
         new_products.extend(cursor.fetchall())
     new_product_list = [
@@ -218,7 +225,7 @@ def store():
     for category in ['drinks']:
         cursor.execute("""SELECT id, category, name, image_url
                           FROM products
-                          WHERE category = ?
+                          WHERE category = %s
                           ORDER BY id DESC LIMIT 5""", (category,))
         new_drinks.extend(cursor.fetchall())
     new_drinks_list = [
@@ -229,7 +236,7 @@ def store():
     for category in ['nuts']:
         cursor.execute("""SELECT id, category, name, image_url
                           FROM products
-                          WHERE category = ?
+                          WHERE category = %s
                           ORDER BY id DESC LIMIT 5""", (category,))
         new_nuts.extend(cursor.fetchall())
     new_nuts_list = [
@@ -285,7 +292,7 @@ def feedback():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+        "INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
         (name, email, phone, comment)
     )
     conn.commit()
@@ -344,7 +351,7 @@ def vegetables():
         else:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
                            (name, email, phone, comment))
             conn.commit()
             conn.close()
@@ -367,7 +374,7 @@ def vegetables():
         cursor.execute("""
                 SELECT id, category, name, image_url 
                 FROM products 
-                WHERE category = ? 
+                WHERE category = %s 
                 ORDER BY id DESC 
             """, (category,))
         vegetables.extend(cursor.fetchall())
@@ -386,7 +393,7 @@ def vegetables():
         cursor.execute("""
                     SELECT id, category, name, image_url 
                     FROM products 
-                    WHERE category = ? 
+                    WHERE category = %s 
                     ORDER BY id DESC 
                 """, (category,))
         fruits.extend(cursor.fetchall())
@@ -405,7 +412,7 @@ def vegetables():
         cursor.execute("""
                         SELECT id, category, name, image_url 
                         FROM products 
-                        WHERE category = ? 
+                        WHERE category = %s 
                         ORDER BY id DESC 
                     """, (category,))
         greenery.extend(cursor.fetchall())
@@ -480,7 +487,7 @@ def meat():
         else:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
                            (name, email, phone, comment))
             conn.commit()
             conn.close()
@@ -503,7 +510,7 @@ def meat():
         cursor.execute("""
                         SELECT id, category, name, image_url 
                         FROM products 
-                        WHERE category = ? 
+                        WHERE category = %s 
                         ORDER BY id DESC 
                         LIMIT 15 OFFSET 10
                     """, (category,))
@@ -523,7 +530,7 @@ def meat():
         cursor.execute("""
                     SELECT id, category, name, image_url 
                     FROM products 
-                    WHERE category = ? 
+                    WHERE category = %s 
                     ORDER BY id DESC 
                     LIMIT 5 OFFSET 5
                 """, (category,))
@@ -543,7 +550,7 @@ def meat():
         cursor.execute("""
                 SELECT id, category, name, image_url 
                 FROM products 
-                WHERE category = ? 
+                WHERE category = %s 
                 ORDER BY id DESC 
                 LIMIT 5
             """, (category,))
@@ -618,7 +625,7 @@ def drinks():
         else:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
                            (name, email, phone, comment))
             conn.commit()
             conn.close()
@@ -641,7 +648,7 @@ def drinks():
         cursor.execute("""
                 SELECT id, category, name, image_url 
                 FROM products 
-                WHERE category = ? 
+                WHERE category = %s 
                 ORDER BY id ASC 
             """, (category,))
         drinks.extend(cursor.fetchall())
@@ -714,7 +721,7 @@ def nuts():
         else:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
                            (name, email, phone, comment))
             conn.commit()
             conn.close()
@@ -737,7 +744,7 @@ def nuts():
         cursor.execute("""
                 SELECT id, category, name, image_url 
                 FROM products 
-                WHERE category = ? 
+                WHERE category = %s 
                 ORDER BY id ASC 
             """, (category,))
         nuts.extend(cursor.fetchall())
@@ -772,18 +779,18 @@ def add_to_cart():
     product_id = data.get('product_id')
     quantity = data.get('quantity')
 
-    conn = sqlite3.connect('users.db')
+    conn = get_db()
     c = conn.cursor()
 
     product_name = data.get('product_name')
 
-    c.execute('SELECT id, quantity FROM cart WHERE user_id=? AND product_id=?', (user_id, product_id))
+    c.execute('SELECT id, quantity FROM cart WHERE user_id=%s AND product_id=%s', (user_id, product_id))
     row = c.fetchone()
 
     if row:
-        c.execute('UPDATE cart SET quantity = quantity + ? WHERE id = ?', (quantity, row[0]))
+        c.execute('UPDATE cart SET quantity = quantity + %s WHERE id = %s', (quantity, row[0]))
     else:
-        c.execute('INSERT INTO cart (user_id, product_id, product_name, quantity) VALUES (?, ?, ?, ?)',
+        c.execute('INSERT INTO cart (user_id, product_id, product_name, quantity) VALUES (%s, %s, %s, %s)',
                   (user_id, product_id, product_name, quantity))
 
     conn.commit()
@@ -803,7 +810,7 @@ def cart():
     cursor.execute('''
         SELECT product_id, product_name, quantity
         FROM cart
-        WHERE user_id = ?
+        WHERE user_id = %s
     ''', (user_id,))
     items = cursor.fetchall()
 
@@ -880,7 +887,7 @@ def search():
         else:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO feedback (name, email, phone, comment) VALUES (%s, %s, %s, %s)",
                            (name, email, phone, comment))
             conn.commit()
             conn.close()
@@ -896,7 +903,7 @@ def search():
         cursor.execute("""
             SELECT id, category, name, image_url
             FROM products
-            WHERE UPPER(name) LIKE UPPER(?)
+            WHERE UPPER(name) LIKE UPPER(%s)
         """, (f"%{query}%",))
         products = cursor.fetchall()
         conn.close()

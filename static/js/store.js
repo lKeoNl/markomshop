@@ -114,7 +114,7 @@ let currentModal = null;
 
       if (result.success) {
         closeModal();
-        cartNotification('Товар добавлен в корзину!');
+        showNotification('Товар добавлен в корзину!');
       } else {
         alert(result.message || 'Ошибка при добавлении.');
       }
